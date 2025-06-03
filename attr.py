@@ -27,3 +27,9 @@ def chance_action(action):
     for i in indexs:
         cards.append(action[1][i])
     return cards
+
+class Player:
+    def __init__(self, id):
+        self.id = id
+
+        pass

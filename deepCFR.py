@@ -9,7 +9,9 @@ def traverse(history, i, curr_player):
     else:
         if curr_player == 'c':
             a = chance_action(possible_actions(history, curr_player))
-            pass
+            new_history = history + ({'c': a})
+            next_player = get_next_turn(new_history)
+            return traverse(new_history, i, next_player)
         else:
             pass
 

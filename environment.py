@@ -125,8 +125,21 @@ def possible_actions(history, I):
         return {0:0, 1:0, 2:0, 3:0, 4:0, 5:0}
 
 
-
+#TODO ZACHY
 def get_infoset(history, curr_player):
+    """
+
+    :param history: Example of tuple:
+    (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
+    {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
+    :param curr_player: goign to be 1, 2 or 'c', if c just return history.
+    :return: return a vector (represented as a list)
+    [Current player chips, Opposing player chips, prelop equity, preflop raise count, preflop potsize, flop equity, flop raise count, flop potsize,
+    turn equity, turn raise count, turn potsize, river equity, river raise count, river potsize]
+    Using the example aboce, the infoset vector for player 1 would be:
+    [Player1_Chips, Player2_Chips, .7, 4, 2, .7, 0, 0, 0 ,0 ,0 ,0 ,0 ,0]
+    Use get_equity to get the equity it is implemented for you already
+    """
     ### (stack size, opp stack size, equity, pot size, raise count, check raise?, betting round)
     betting_round = get_betting_round(history)
     pot_size = get_potsize(history)
@@ -156,19 +169,44 @@ def remove_cards(deck, cards):
     return [x for x in deck if x not in cards]
 
 
+#TODO ZACHY
 def get_betting_round(history):
-    #TODO Fix function
+    """
+    Take the history and return the betting round. 0 for preflop, 1 for flop, 2 for turn and 3 for river.
+    :param history: tuple of actions:
+    Example of tuple:
+    (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
+    {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
+    :return:
+    """
+
     count = 0
     for action in history[4:]:
         if action.key() == 'c':
             count += 1
 
     return count
-#TODO
+
+#TODO ZACHY
 def get_hand(history, i):
+    """
+    :param history: tuple of actions:
+    Example of tuple:
+    (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
+    {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
+    :param i: Which player, either 1 or 2. if 1 get hand returns [As, Ks, 2h, 3h, 6c], else [Jc, Kc, 2h, 3h, 6c]
+    :return:
+    """
     pass
-#TODO
+#TODO ZACHY
 def get_potsize(history):
+    """
+     :param history: tuple of actions:
+    Example of tuple:
+    (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
+    {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
+    :return: Potsize from actions 'C' and 'R'. THe raise is added on top of the call. So, the potsize is 4x small blind in this current hand
+    """
     pass
 def get_equity(cards):
     return _equity(cards[:2], cards[2:], 10000)
