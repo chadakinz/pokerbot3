@@ -228,3 +228,7 @@ def _equity(hero_cards, board, num_iter):
         return equity.py_all_hands_vs_range(hero_dist, villain_dist, new_board, num_iter)[(hero_cards[0], hero_cards[1])]
     except:
         return equity.py_all_hands_vs_range(hero_dist, villain_dist, new_board, num_iter)[(hero_cards[1], hero_cards[0])]
+
+
+def process_action(num):
+    pass

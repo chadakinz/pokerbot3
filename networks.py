@@ -1,4 +1,83 @@
-class Buffer:
-    def __init__(self, size):
-        self.size = size
+import numpy as np
+from attr import *
+
+
+class NeuralNetwork:
+    """Neural Network with one hidden layer"""
+    def __init__(self, data_size, classification_size, hidden_layer_size, dec_rate = 10):
+        """
+        Initialize the weights and hyperparameters of the neural network using arbitrary data size
+        """
+        self.hidden_layer_weights = np.random.uniform(0, 1, size=(data_size + 1, hidden_layer_size))
+        self.output_layer_weights = np.random.uniform(0, 1, size=(hidden_layer_size + 1, classification_size))
+        self.dec_rate = dec_rate
+
+    def initialize_data(self, data, classification):
+        """
+        Gives the neural network the data to create the training and testing sets
+        """
+        x_cols, x_rows = data.shape
+        self.x_train = data
+        self.y_train = classification
+        self.x_train = self.x_train.T
+        self.y_train = self.y_train.T
+
+
+    def train(self, r):
+        print(self.hidden_layer_weights)
+        print(self.output_layer_weights)
+
+        for j in range(r):
+            for i in range(self.x_train.shape[1]):
+                X = self.x_train[:, i]
+                Y = self.y_train[:, i]
+                Z, A = self.input_to_hidden(X)
+                T = self.hidden_to_output(Z)
+                g = self.softmax(T)
+
+                dg_dT = np.diag(g/T) - np.outer(g, g/T)
+                drel_dA = np.array([1 if x > 0 else 0 for x in A])
+                dR_dg = -2 * (Y - g)
+                S = dg_dT @ dR_dg
+                L = np.matmul(self.output_layer_weights[1:], S) * drel_dA
+
+                self.output_layer_weights[1:] -=  (self.dec_rate) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
+                self.output_layer_weights[0] -= (self.dec_rate) * S
+
+                self.hidden_layer_weights[0] -= (self.dec_rate) * L
+                self.hidden_layer_weights[1:] -= (self.dec_rate) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
+
+
+    def input_to_hidden(self, X):
+        """
+        Applies weights and biases to the input vector X and returns vector Z = vector reLU(A)
+        Returns both Z and A for partial derivative calculations in gradient descent.
+        :param X:
+        :return: Z, A
+        """
+        biases = self.hidden_layer_weights[0]
+        weights = self.hidden_layer_weights[1:]
+        A = biases + (weights.T @ X)
+        reLU = np.vectorize(lambda x: np.maximum(0, x))
+        Z = reLU(A)
+        return Z, A
+
+    def hidden_to_output(self, Z):
+        """
+        Takes vector Z output from the hidden layer, and outputs vector T.
+        """
+        biases = self.output_layer_weights[0]
+        weights = self.output_layer_weights[1:]
+        T = biases + (weights.T @ Z)
+        normalize = np.vectorize(lambda x: np.maximum(1, x))
+        return normalize(T)
+    def softmax(self, T):
+        """
+        Apply softmax activation to our output vector T and get the distribution of our classification predictions
+        as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
+        return vector g.
+        """
+        exp_T = np.exp(np.log(T))
+        return exp_T / np.sum(exp_T)
+
 
