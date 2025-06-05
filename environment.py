@@ -2,7 +2,7 @@ import numpy as np
 import phevaluator
 from eval7 import equity, cards, handrange
 
-
+#ZACHARY GOTHELF
 
 ### History data type ({'c': [cards]}, {1: {'R': amount}}, {2: {'C': amount}}}
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
@@ -201,7 +201,7 @@ def get_hand(history, i):
 #TODO ZACHY
 def get_potsize(history):
     """
-     :param history: tuple of actions:
+    :param history: tuple of actions:
     Example of tuple:
     (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
     {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
