@@ -81,3 +81,57 @@ class NeuralNetwork:
         return exp_T / np.sum(exp_T)
 
 
+class ValueNetwork(NeuralNetwork):
+    def __init__(self, data_size, classification_size, hidden_layer_size, dec_rate = 10):
+        super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
+
+    def train(self, r):
+        for j in range(r):
+            for i in range(self.x_train.shape[1]):
+                X = self.x_train[:, i]  # Input vector (features)
+                Y = self.y_train[:, i]  # Target value(s)
+
+                # Forward pass
+                Z, A = self.input_to_hidden(X)  # Hidden layer output (Z), pre-activation (A)
+                T = self.hidden_to_output(Z)  # Output layer (regression output)
+
+                # Compute gradient of MSE loss w.r.t. output T
+                dR_dT = 2 * (T - Y)  # Assuming Y and T are both vectors
+
+                # Backpropagate to hidden layer
+                dT_dZ = self.output_layer_weights[1:]  # Shape: [hidden_size, output_size]
+                dR_dZ = dT_dZ @ dR_dT  # shape: [hidden_size]
+                dZ_dA = np.array([1 if a > 0 else 0 for a in A])  # ReLU derivative
+                dR_dA = dR_dZ * dZ_dA  # Element-wise multiply
+
+                # Update output layer weights
+                self.output_layer_weights[1:] -= self.dec_rate * np.outer(Z, dR_dT)
+                self.output_layer_weights[0] -= self.dec_rate * dR_dT
+
+                # Update hidden layer weights
+                self.hidden_layer_weights[1:] -= self.dec_rate * np.outer(X, dR_dA)
+                self.hidden_layer_weights[0] -= self.dec_rate * dR_dA
+    def regret_matching(self, I):
+        Z, A = self.input_to_hidden(I)
+        T = self.hidden_to_output(Z)
+        if np.all(T <= 0):
+            return np.ones_like(T) / len(T)
+
+        positive_regrets = np.maximum(T, 0)
+        total = positive_regrets.sum()
+
+        if total == 0:
+            return np.ones_like(T) / len(T)
+
+        return positive_regrets / total
+
+class PolicyNetwork(NeuralNetwork):
+    def __init__(self, data_size, classification_size, hidden_layer_size, dec_rate = 10):
+        super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
+
+
+    def sample_action(self, I):
+        Z, A = self.input_to_hidden(I)
+        T = self.hidden_to_output(Z)
+        g = self.softmax(T)
+        return np.random.choice(len(g), p = g)

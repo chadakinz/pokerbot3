@@ -37,8 +37,8 @@ if __name__ == '__main__':
     T = 1000
     players = [1, 2]
     K = 100
-    value_networks = {1: NeuralNetwork(15, 6, 8), 2: NeuralNetwork(15, 6, 8)}
-    pol_networks = NeuralNetwork(15, 6, 8)
+    value_networks = {1: ValueNetwork(15, 6, 8), 2: ValueNetwork(15, 6, 8)}
+    pol_networks = PolicyNetwork(15, 6, 8)
     value_memories = {1: Buffer(10000000000), 2: Buffer(10000000000)}
     strategy_memory = Buffer(10000000000)
     for t in range(T):
