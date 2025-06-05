@@ -2,7 +2,7 @@ import numpy as np
 import phevaluator
 from eval7 import equity, cards, handrange
 
-#ZACHARY GOTHELF
+#ZACHAREY IS A LOOSER
 
 ### History data type ({'c': [cards]}, {1: {'R': amount}}, {2: {'C': amount}}}
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
