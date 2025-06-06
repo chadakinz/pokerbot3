@@ -219,7 +219,7 @@ def remove_cards(deck, cards):
     return [x for x in deck if x not in cards]
 
 
-#TODO ZACHY
+
 def get_betting_round(history):
     """
     Return the betting round from the history.
@@ -231,7 +231,7 @@ def get_betting_round(history):
             round_num += 1
     return round_num
 
-#TODO ZACHY
+
 def get_hand(history, i):
     """
     :param history: tuple representing game history
