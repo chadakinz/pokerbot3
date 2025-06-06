@@ -129,9 +129,8 @@ class PolicyNetwork(NeuralNetwork):
     def __init__(self, data_size, classification_size, hidden_layer_size, dec_rate = 10):
         super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
 
-
     def sample_action(self, I):
         Z, A = self.input_to_hidden(I)
         T = self.hidden_to_output(Z)
         g = self.softmax(T)
-        return np.random.choice(len(g), p = g)
+        return np.random.choice(len(g), p = g), g

@@ -14,16 +14,17 @@ for rank in ranks:
 def initialize_tree(bb_max_range, ):
     return np.random.randint(0, bb_max_range, size = (2,))
 
+#TODO Logic needs fixed
 def get_next_turn(history):
     n = len(history)
     #Preflop and cards need to be dealt
-    if n < 4: return 'c'
+    if n < 5: return 'c'
     #Small blind ante
-    if n == 4: return 2
+    if n == 5: return 2
     #Big blind ante
-    elif n == 5: return 1
-    #First action call or raise defers to opp
     elif n == 6: return 1
+    #First action call or raise defers to opp
+    elif n == 7: return 1
 
     elif n > 6:
         if history[-1].value() == 'C': return 'c'
@@ -207,7 +208,8 @@ def get_potsize(history):
     {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
     :return: Potsize from actions 'C' and 'R'. THe raise is added on top of the call. So, the potsize is 4x small blind in this current hand
     """
-    pass
+
+    return 3
 def get_equity(cards):
     return _equity(cards[:2], cards[2:], 10000)
 
@@ -229,6 +231,37 @@ def _equity(hero_cards, board, num_iter):
     except:
         return equity.py_all_hands_vs_range(hero_dist, villain_dist, new_board, num_iter)[(hero_cards[1], hero_cards[0])]
 
+#Todo Process action integer 0 - 5 to fold - allin. Make sure edge cases are taken into consideration
+def process_action(num, history, i):
+    call_amount = get_call_amount(history)
+    match num:
+        case 0: return 'F'
+        case 1:
 
-def process_action(num):
+            if is_all_in(call_amount, i):
+                return all_in_action(history, call_amount)
+            return {'C': call_amount}
+        case 2:
+            potsize = get_potsize(history)
+            raise_amount = round(.25 * potsize)
+
+
+            return {'R': raise_amount}
+
+            pass
+        case 3:
+            pass
+        case 4:
+            pass
+        case 5:
+            pass
+
+
+def get_call_amount(history):
+    pass
+
+def is_all_in(call_amonunt):
+    return False
+
+def all_in_action(history):
     pass

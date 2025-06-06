@@ -24,9 +24,10 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, pol_net):
             next_player = get_next_turn(new_history)
             return traverse(new_history, i, next_player, t, val_mem, pol_mem, val1_net, pol_net)
         else:
-            na = pol_net.sample_action(infoset)
+            na, p = pol_net.sample_action(infoset)
             next_action = process_action(na)
             next_history = history + ({curr_player: next_action},)
+            pol_mem.push((infoset, t, p))
             return traverse(next_history, i, get_next_turn(history), t, val_mem, pol_mem, val1_net, pol_net)
 
 
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     strategy_memory = Buffer(10000000000)
     for t in range(T):
         starting_stacks = initialize_tree(150)
-        history = ({1:starting_stacks[0]}, {2:starting_stacks[1]},)
+        history = ({1:starting_stacks[0]}, {2:starting_stacks[1]}, {2: {"R": 1}}, {1: {"C": 1}}, {1: {"R": 1}})
         for i in players:
             for k in range(1, K):
                 p = get_next_turn(history)
