@@ -57,6 +57,8 @@ class NeuralNetwork:
         """
         biases = self.hidden_layer_weights[0]
         weights = self.hidden_layer_weights[1:]
+
+        print(weights.T)
         A = biases + (weights.T @ X)
         reLU = np.vectorize(lambda x: np.maximum(0, x))
         Z = reLU(A)

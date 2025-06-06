@@ -8,11 +8,11 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, pol_net):
     if curr_player == i:
         regret = []
         weighted_value = []
-        for i in range(6):
-            new_action = process_action(i)
+        for j in range(6):
+            new_action = process_action(j, history, i)
             new_history = history + ({curr_player: new_action},)
             r = traverse(new_history, i, get_next_turn(history), t, val_mem, pol_mem, val1_net, pol_net)
-            p_r = val1_net.regret_matching(infoset)[i] * r
+            p_r = val1_net.regret_matching(infoset)[j] * r
             regret.append(r - p_r)
             weighted_value.append(p_r)
         val_mem.push((infoset, t, np.array(regret)))
@@ -25,7 +25,7 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, pol_net):
             return traverse(new_history, i, next_player, t, val_mem, pol_mem, val1_net, pol_net)
         else:
             na, p = pol_net.sample_action(infoset)
-            next_action = process_action(na)
+            next_action = process_action(na, history, curr_player)
             next_history = history + ({curr_player: next_action},)
             pol_mem.push((infoset, t, p))
             return traverse(next_history, i, get_next_turn(history), t, val_mem, pol_mem, val1_net, pol_net)
@@ -43,8 +43,7 @@ if __name__ == '__main__':
     value_memories = {1: Buffer(10000000000), 2: Buffer(10000000000)}
     strategy_memory = Buffer(10000000000)
     for t in range(T):
-        starting_stacks = initialize_tree(150)
-        history = ({1:starting_stacks[0]}, {2:starting_stacks[1]}, {2: {"R": 1}}, {1: {"C": 1}}, {1: {"R": 1}})
+        history = initialize_tree(150)
         for i in players:
             for k in range(1, K):
                 p = get_next_turn(history)
