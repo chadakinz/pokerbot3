@@ -1,6 +1,6 @@
 from environment import *
 import numpy as np
-
+import random
 
 def chance_action(action):
     cards = []
@@ -31,7 +31,9 @@ class Buffer:
                 self.buffer[k] = x
 
     def sample(self,k):
-        sample = np.random.choice(self.buffer, size=k, replace=False)
+        #print(f"buffer = {self.buffer}")
+        #print(len(self.buffer))
+        sample = random.sample(self.buffer, min(len(self.buffer), k))
         data = []
         value = []
         s = 0

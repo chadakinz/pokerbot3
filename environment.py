@@ -2,7 +2,7 @@ import numpy as np
 import phevaluator
 from eval7 import equity, cards, handrange
 from attr import *
-#ZACHAREY IS A LOOSER
+
 
 ### History data type ({'c': [cards]}, {1: {'R': amount}}, {2: {'C': amount}}}
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
@@ -12,56 +12,69 @@ for rank in ranks:
     for suit in suits:
         deck.append(rank + suit)
 def initialize_tree(bb_max_range, ):
-    starting_stacks = np.random.randint(0, bb_max_range, size = (2,))
+    starting_stacks = np.random.randint(3, bb_max_range, size = (2,))
     cards = chance_action((4,deck))
-    return (starting_stacks[0], starting_stacks[1], {'c': cards[0:2]}, {'c': cards[2:]}, {2: {"R": 1}}, {1: {"C": 1}}, {1: {"R": 1}})
+    return ((1, starting_stacks[0], None), (2, starting_stacks[1], None) , ('c', cards[0:2], 1), ('c', cards[2:], 2),
+            (2, "R", 1), (1, "C", 1), (1, "R", 1))
 
 
-#TODO Logic needs fixed
+
 def get_next_turn(history):
     n = len(history)
+    #print(history)
 
-    if n == 7: return 1
+    if n == 7: return 2
 
     elif n > 7:
-        if history[-1].value() == 'C': return 'c'
-        elif history[-1].value() == 'R':
-            if history[-1].key() == 1:
-                return 2
-            else:
-                return 1
+        #print("INSIDE n> 7")
+        count = 0
+        for item in reversed(history):
+            if item[0] == 'c':
+                break
+            if item[1] == "R" or item[1] == "C":
+                count += 1
 
-        else: raise Exception("get next turn missing case")
+        if history[-1][1] == "C":
+            if count >= 1:
+                #print("HELLO????")
+                return 'c'
+            else:
+                if history[-1][0] == 1: return 2
+                else: return 1
+        elif history[-1][1] == "A" or history[-2][1] == "A" or history[-3][1] == "A":
+            return 'c'
+        elif  history[-1][1] == "R":
+            if history[-1][0] == 1: return 2
+            else: return 1
+
+        elif history[-1][0] == "c":
+            return 1
+
+
+        else: return -1
+
 
 def is_terminal(history):
-    print(history)
-    for item in history:
-        if isinstance(item, dict) and 'c' not in item:
-            for move in item.values():
-                if 'F' == move:
-                    return True
+    #print(history)
+    if history[-1][1] == "F":
+        return True
 
     # Check if river is dealt
-    if get_betting_round(history) != 4:
+    if get_betting_round(history) != 3:
         return False
 
 
     # If river is dealt, and any action is 'A' (check), it's terminal
     for item in history:
-        if isinstance(item, dict) and 'c' not in item:
-            for move in item.values():
-                if 'A' in move:
-                    return True
+        if item[1] == "A":
+            return True
 
-    found_r_or_a = False
+    check = False
     for item in reversed(history):
-        if isinstance(item, dict) and 'c' not in item:
-            for move in item.values():
-                if isinstance(move, dict):
-                    if 'R' or 'C' in move:
-                        found_r_or_a = True
-                    if 'C' in move and found_r_or_a:
-                        return True
+        if item[1] == "C":
+            check = True
+        if check and (item[1] == "R" or item[1] == "C"):
+            return True
     return False
 
 def utility(history, i):
@@ -69,22 +82,22 @@ def utility(history, i):
         opp = 2
         cards = history[2]
         opp_cards = history[3]
-        chips = history[0]
-        opp_chips = history[1]
+        chips = history[0][1]
+        opp_chips = history[1][1]
     else:
         opp = 1
         cards = history[3]
         opp_cards = history[2]
-        chips = history[1]
-        opp_chips = history[0]
+        chips = history[1][1]
+        opp_chips = history[0][1]
     chips_staked = chips - get_chips(history, i)
     opp_chips_staked = opp_chips - get_chips(history, opp)
 
 
 
-    if 'F' in history[-1].values() and i in history[-1].keys():
+    if history[-1][1] == 'F' and history[-1][0] == i:
         return -chips_staked
-    elif 'F' in history[-1].values() and i not in history[-1].keys():
+    elif history[-1][1] == 'F' and history[-1][0] != i:
         return opp_chips_staked
 
     round_winner = hand_winner(get_hand(history, i), get_hand(history, opp))
@@ -95,12 +108,11 @@ def utility(history, i):
     else:
         return 0
 
-
 def hand_winner(curr_hand, opp_hand):
     """Curr hand and opp hand in form [As, Aj, 8h, 7h, 5h], [Ks, Kj, 8h, 7h, 5h]"""
-    print(curr_hand, opp_hand)
-    curr_score = phevaluator.evaluate_cards(" ".join(curr_hand))
-    opp_score = phevaluator.evaluate_cards(" ".join(opp_hand))
+    #print(curr_hand, opp_hand)
+    curr_score = evaluate(curr_hand)
+    opp_score = evaluate(opp_hand)
 
     if curr_score > opp_score:
         return 1
@@ -112,24 +124,14 @@ def hand_winner(curr_hand, opp_hand):
 def evaluate(cards):
     return phevaluator.evaluate_cards(cards[0], cards[1], cards[2], cards[3], cards[4], cards[5], cards[6])
 
-def possible_actions(history, I):
-    p1_chips = history[3]
-    p2_chips = history[4]
-
-    for action in history:
-        if action.value() == 'C' or action.value() == 'R':
-            if action.key() == 1:
-                p1_chips -= action.value().value()
-            else:
-                p2_chips -= action.value().value()
-
-    if I == history:
+def possible_actions(history, i):
+    if i == 'c':
         count = 0
         cards = []
-        for action in I:
-            if action.key() == 'c':
+        for item in history:
+            if item[0] == 'c':
                 count += 1
-                cards.append(action.value())
+                cards += item[1]
 
         if count == 0: return (2, deck)
         elif count == 1: return (2, remove_cards(deck, cards))
@@ -140,7 +142,6 @@ def possible_actions(history, I):
     else:
         ### 0 - Fold, 1 - Call/Check, 2 - .25 * Pot, 3 - .5 * Pot, 4 - 1 * pot, 5 - all in
         return {0:0, 1:0, 2:0, 3:0, 4:0, 5:0}
-
 
 
 def get_infoset(history, curr_player):
@@ -163,56 +164,42 @@ def get_infoset(history, curr_player):
     infoset = [0] * 15
 
     # Chip stacks
-    p1_chips, p2_chips = history[0], history[1]
+    p1_chips, p2_chips = history[0][1], history[1][1]
     infoset[0] = p1_chips if curr_player == 1 else p2_chips
     infoset[1] = p2_chips if curr_player == 1 else p1_chips
-
-    opponent = 2 if curr_player == 1 else 1
-
+    if curr_player == 1:
+        cards = history[2][1]
+        opponent = 2
+    else:
+        cards = history[3][1]
+        opponent = 1
+    raise_count = 0
     # Track board and current street
     board = []
-    street = 0
-    street_actions = [[] for _ in range(4)]
+    potsize = 0
+    count = 0
+    for j in range(4, len(history)):
+        if history[j][0] == 'c':
+            infoset[2 + 3 * count] = get_equity(cards + board)
+            infoset[2 + 3 * count + 1] = raise_count
+            infoset[2 + 3 * count + 2] = potsize
+            raise_count = 0
+            potsize = 0
+            board += history[j][1]
+            count += 1
 
-    for item in history[4:]:
-        if isinstance(item, dict) and 'c' in item:
-            board.append(item['c'])
-            street = len(board) - 2  # flop = 1, turn = 2, river = 3
-        else:
-            street_actions[street].append(item)
+        if history[j][1]  == "R":
+            raise_count += 1
+            potsize += history[j][2]
+        elif history[j][1] == "C":
+            potsize += history[j][2]
 
-    # Fill infoset for reached streets
-    for i in range(4):
-        if i > street:
-            break  # Future streets will remain 0
-
-        actions = street_actions[i]
-        raise_count = 0
-
-        for j, act in enumerate(actions):
-            for pid, move in act.items():
-                for action, amount in move.items():
-                    if action == 'R':
-                        raise_count += 1
-                        if j > 0:
-                            prev = actions[j - 1]
-                            if pid in prev and 'C' in prev[pid]:
-                                amount -= prev[pid]['C']
-
-        potsize = get_potsize(actions)
-
-        my_hand = get_hand(history, curr_player)
-
-        equity = get_equity(my_hand)
-
-        infoset[i * 3 + 2] = equity
-        infoset[i * 3 + 3] = raise_count
-        infoset[i * 3 + 4] = potsize
-
-    # Add game state as last value
-    infoset[-1] = street
-
+    infoset[2 + 3 * count] = get_equity(cards + board)
+    infoset[2 + 3 * count + 1] = raise_count
+    infoset[2 + 3 * count + 2] = potsize
+    infoset[-1] = count
     return infoset
+
 
 
 def remove_cards(deck, cards):
@@ -226,8 +213,8 @@ def get_betting_round(history):
     0 = preflop, 1 = flop, 2 = turn, 3 = river
     """
     round_num = 0
-    for action in history[4:]:
-        if isinstance(action, dict) and 'c' in action:
+    for item in history[4:]:
+        if item[0] == 'c':
             round_num += 1
     return round_num
 
@@ -241,43 +228,34 @@ def get_hand(history, i):
 
     # Get player hole cards
     if i == 1:
-        hole_cards = history[2].get('c', [])
+        hole_cards = history[2][1]
     elif i == 2:
-        hole_cards = history[3].get('c', [])
+        hole_cards = history[3][1]
     else:
         raise ValueError("Player index must be 1 or 2")
 
     # Collect board cards from all dicts with key 'c' after player cards
     board_cards = []
     for item in history[4:]:
-        if isinstance(item, dict) and 'c' in item:
-            board_cards = item['c']  # always take latest board snapshot
+        if item[0] == 'c':
+            board_cards += item[1]  # always take latest board snapshot
 
     # Combine hole cards and board cards
     full_hand = hole_cards + board_cards
 
     return full_hand
 
+
 def get_potsize(history):
-    """
-    :param history: tuple of actions:
-    Example of tuple:
-    (Player1_Chips, Player2_Chips, {'c': [As, Ks]}, {'c': [Jc, Kc]}, {2: {'R': (Small blind) :: Int}},
-    {1: {'C': (Small blind) :: Int}}, {1: {'R': (Small blind) :: Int}}, {2: {'C': (Small blind) :: Int}}, {'c': [2h, 3h, 6c]})
-    :return: Potsize from actions 'C' and 'R'. THe raise is added on top of the call. So, the potsize is 4x small blind in this current hand
-    """
+
     potsize = 0
     for item in history:
-        if isinstance(item, dict):
-            # There will be only one player_id and one action inside
-            for action_dict in item.values():
-                if isinstance(action_dict, dict):
-                    for action, amount in action_dict.items():
-                        if action in {'C', 'R'}:
-                            potsize += amount
-
+        if item[1] == "C" or item[1] == "R":
+            potsize += item[2]
     return potsize
+
 def get_equity(cards):
+    #print(f"CARDS: {cards}")
     return _equity(cards[:2], cards[2:], 10000)
 
 def _equity(hero_cards, board, num_iter):
@@ -303,48 +281,57 @@ def _equity(hero_cards, board, num_iter):
 def process_action(num, history, i):
     call_amount = get_call_amount(history)
     match num:
-        case 0: return 'F'
+        case 0: return ((i, 'F', None),)
         case 1:
-            if get_chips(history, 1) == 0 or get_chips(history, 2) == 0:
-                return 'A'
-            return {'C': call_amount}
+            #print(f"TEST: {(history + ((i, 'C', call_amount),))}")
+            if get_chips(history + ((i, 'C', call_amount),), 1) <= 0 or get_chips(history + ((i, 'C', call_amount),), 2) <= 0:
+                return ((i, 'A', call_amount),)
+            return ((i, 'C', call_amount),)
         case 2:
             potsize = get_potsize(history)
             raise_amount = round(.25 * potsize)
+            if call_amount >= get_chips(history, i):
+                return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return {'R': min(call_amount, get_chips(history, 1), get_chips(history,2))}
+                return (i, "C", call_amount) , (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history,2)))
             else:
 
 
-                return {'R': min(raise_amount, get_chips(history, 1), get_chips(history,2))}
+                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history,2)))
 
 
         case 3:
             potsize = get_potsize(history)
             raise_amount = round(.5 * potsize)
+            if call_amount >= get_chips(history, i):
+                return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return {'R': min(call_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history, 2)))
             else:
 
-                return {'R': min(raise_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount), (i, 'R', min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
 
 
         case 4:
             potsize = get_potsize(history)
             raise_amount = potsize
+            if call_amount >= get_chips(history, i):
+                return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return {'R': min(call_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history, 2)))
             else:
 
-                return {'R': min(raise_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
 
         case 5:
             raise_amount = get_chips(history, i)
+            if call_amount >= get_chips(history, i):
+                return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return {'R': min(call_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount), (i, 'R', min(call_amount, get_chips(history, 1), get_chips(history, 2)))
             else:
 
-                return {'R': min(raise_amount, get_chips(history, 1), get_chips(history, 2))}
+                return (i, "C", call_amount) , (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
 
 
 def get_call_amount(history):
@@ -356,13 +343,15 @@ def get_call_amount(history):
     {player_id: {'R': amount}} or {player_id: {'C': amount}}, etc.
     """
     for item in reversed(history):
-        if isinstance(item, dict):
-            for action_dict in item.values():
-                if isinstance(action_dict, dict):
-                    if 'R' in action_dict:
-                        return action_dict['R']
+        if item[0] == 'c':
+            return 0
+        elif item[1] == "C":
+            return 0
+        elif item[1] == "F":
+            return 0
+        elif item[1] == "R":
+            return item[2]
     return 0
-
 
 
 def get_chips(history, i):
@@ -375,33 +364,35 @@ def get_chips(history, i):
     """
 
     # Get initial chip count
-    chips = history[0] if i == 1 else history[1]
+    chips = history[0][1] if i == 1 else history[1][1]
 
     # Loop through history actions
     for item in history[4:]:
-        if isinstance(item, dict) and i in item:
-            action_dict = item[i]
-            if isinstance(action_dict, dict):
-                for action, amount in action_dict.items():
-
-                    if action in ('C', 'R'):
-                        chips -= amount
-
+        #print(f"ITEM: {item}")
+        if item[1] == "C" or item[1] == "R" and item[0] == i:
+            chips -= item[2]
     return chips
+
+
+def process_all_in(history):
+
+    pass
 
 if __name__ == '__main__':
     history = (
-        80, 80,
-        {'c': ['Jh', 'Jc']},
-        {'c': ['Qs', 'Qc']},
-        {1: {'R': 2}},
-        {2: {'C': 2}},
-        {'c': ['Ad', 'Kh', 'Ks']},
-        {2: {'R': 4}},
-        {1: {'C': 4}},
-        {'c': ['As']},
-        {1: {'R': 6}},
-        {2: {'C': 6}},
-        {'c': ['Qh']},  # River
-    )
+        (1, 80, None), (2, 80, None),
+        ('c', ['Jh', 'Jc'], None),
+        ('c', ['Qs', 'Qc'], None),
+        (2, 'R',  1),
+        (1, 'C', 1),
+        (1, 'R', 1),
+        (2, 'C', 1),
+        ('c', ['Ad', 'Kh', 'Ks'], None),
+        (2, 'R', 4),
+        (1, 'C', 4), ('c', ['As'], None),
+            (1, 'R', 6),
+            (2, 'C', 6),
+            ('c', ['Qh'], None), (1, 'C', 0), (2, 'C', 0))
+
     print(get_infoset(history, 1))
+    print(is_terminal(history))

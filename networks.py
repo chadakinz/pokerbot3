@@ -16,7 +16,7 @@ class NeuralNetwork:
         """
         Gives the neural network the data to create the training and testing sets
         """
-        x_cols, x_rows = data.shape
+
         self.x_train = data
         self.y_train = classification
         self.x_train = self.x_train.T
@@ -24,8 +24,10 @@ class NeuralNetwork:
 
 
     def train(self, r):
-        print(self.hidden_layer_weights)
-        print(self.output_layer_weights)
+        #print(self.hidden_layer_weights)
+        #print(self.output_layer_weights)
+        #print(self.x_train.shape)
+        #pr(self.y_train.shape)
 
         for j in range(r):
             for i in range(self.x_train.shape[1]):
@@ -40,12 +42,26 @@ class NeuralNetwork:
                 dR_dg = -2 * (Y - g)
                 S = dg_dT @ dR_dg
                 L = np.matmul(self.output_layer_weights[1:], S) * drel_dA
+                """  
+                print(F"dRel_da: {drel_dA}")
+                print()
+                print(F"T: {T}")
+                print()
+                print(f"dg_dT: {dg_dT}")
+                print()
+                print(f"dR_dg: {dR_dg}")
+                print()
+                print(f"L: {L}")
+                print()
+                print(f"S: {S}")
+                print()
+                print(f"dec rate: {self.dec_rate}")
+                """
+                self.output_layer_weights[1:] -=  (self.dec_rate * 10) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
+                self.output_layer_weights[0] -= (self.dec_rate * 10) * S
 
-                self.output_layer_weights[1:] -=  (self.dec_rate) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
-                self.output_layer_weights[0] -= (self.dec_rate) * S
-
-                self.hidden_layer_weights[0] -= (self.dec_rate) * L
-                self.hidden_layer_weights[1:] -= (self.dec_rate) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
+                self.hidden_layer_weights[0] -= (self.dec_rate * 10) * L
+                self.hidden_layer_weights[1:] -= (self.dec_rate * 10) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
 
 
     def input_to_hidden(self, X):
@@ -58,7 +74,7 @@ class NeuralNetwork:
         biases = self.hidden_layer_weights[0]
         weights = self.hidden_layer_weights[1:]
 
-        print(weights.T)
+        #print(weights.T)
         A = biases + (weights.T @ X)
         reLU = np.vectorize(lambda x: np.maximum(0, x))
         Z = reLU(A)
