@@ -24,10 +24,7 @@ class NeuralNetwork:
 
 
     def train(self, r):
-        #print(self.hidden_layer_weights)
-        #print(self.output_layer_weights)
-        #print(self.x_train.shape)
-        #pr(self.y_train.shape)
+
 
         for j in range(r):
             for i in range(self.x_train.shape[1]):
@@ -39,29 +36,15 @@ class NeuralNetwork:
 
                 dg_dT = np.diag(g/T) - np.outer(g, g/T)
                 drel_dA = np.array([1 if x > 0 else 0 for x in A])
-                dR_dg = -2 * (Y - g)
+                dR_dg = g - Y
                 S = dg_dT @ dR_dg
                 L = np.matmul(self.output_layer_weights[1:], S) * drel_dA
-                """  
-                print(F"dRel_da: {drel_dA}")
-                print()
-                print(F"T: {T}")
-                print()
-                print(f"dg_dT: {dg_dT}")
-                print()
-                print(f"dR_dg: {dR_dg}")
-                print()
-                print(f"L: {L}")
-                print()
-                print(f"S: {S}")
-                print()
-                print(f"dec rate: {self.dec_rate}")
-                """
-                self.output_layer_weights[1:] -=  (self.dec_rate * 10) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
-                self.output_layer_weights[0] -= (self.dec_rate * 10) * S
 
-                self.hidden_layer_weights[0] -= (self.dec_rate * 10) * L
-                self.hidden_layer_weights[1:] -= (self.dec_rate * 10) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
+                self.output_layer_weights[1:] -=  (self.dec_rate ) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
+                self.output_layer_weights[0] -= (self.dec_rate ) * S
+
+                self.hidden_layer_weights[0] -= (self.dec_rate ) * L
+                self.hidden_layer_weights[1:] -= (self.dec_rate ) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
 
 
     def input_to_hidden(self, X):
@@ -87,16 +70,15 @@ class NeuralNetwork:
         biases = self.output_layer_weights[0]
         weights = self.output_layer_weights[1:]
         T = biases + (weights.T @ Z)
-        normalize = np.vectorize(lambda x: np.maximum(1, x))
-        return normalize(T)
+        return T
     def softmax(self, T):
-        """
-        Apply softmax activation to our output vector T and get the distribution of our classification predictions
-        as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
-        return vector g.
-        """
-        exp_T = np.exp(np.log(T))
-        return exp_T / np.sum(exp_T)
+            """
+            Apply softmax activation to our output vector T and get the distribution of our classification predictions
+            as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
+            return vector g.
+            """
+            exp_T = np.exp(T - np.max(T))
+            return exp_T / np.sum(exp_T)
 
 
 class ValueNetwork(NeuralNetwork):
@@ -114,7 +96,7 @@ class ValueNetwork(NeuralNetwork):
                 T = self.hidden_to_output(Z)  # Output layer (regression output)
 
                 # Compute gradient of MSE loss w.r.t. output T
-                dR_dT = 2 * (T - Y)  # Assuming Y and T are both vectors
+                dR_dT = (T - Y)  # Assuming Y and T are both vectors
 
                 # Backpropagate to hidden layer
                 dT_dZ = self.output_layer_weights[1:]  # Shape: [hidden_size, output_size]

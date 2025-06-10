@@ -1,13 +1,10 @@
-from environment import *
+
 import numpy as np
 import random
 
+
 def chance_action(action):
-    cards = []
-    indexs = np.random.randint(0, len(action[1]), size=(action[0],))
-    for i in indexs:
-        cards.append(action[1][i])
-    return cards
+    return random.sample(action[1], action[0])
 
 class Player:
     def __init__(self, id):
@@ -37,8 +34,10 @@ class Buffer:
         data = []
         value = []
         s = 0
+
         for i in sample:
             data.append(i[0])
             value.append(i[1]* i[2])
             s += i[1]
+
         return data, value, s

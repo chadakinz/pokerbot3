@@ -110,7 +110,7 @@ def utility(history, i):
 
 def hand_winner(curr_hand, opp_hand):
     """Curr hand and opp hand in form [As, Aj, 8h, 7h, 5h], [Ks, Kj, 8h, 7h, 5h]"""
-    #print(curr_hand, opp_hand)
+    #(curr_hand, opp_hand)
     curr_score = evaluate(curr_hand)
     opp_score = evaluate(opp_hand)
 
