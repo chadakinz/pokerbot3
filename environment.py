@@ -77,17 +77,16 @@ def is_terminal(history):
             return True
     return False
 
+#TODO NEEDS TO BE TESTED
+
 def utility(history, i):
     if i == 1:
         opp = 2
-        cards = history[2]
-        opp_cards = history[3]
+
         chips = history[0][1]
         opp_chips = history[1][1]
     else:
         opp = 1
-        cards = history[3]
-        opp_cards = history[2]
         chips = history[1][1]
         opp_chips = history[0][1]
     chips_staked = chips - get_chips(history, i)
@@ -283,7 +282,7 @@ def process_action(num, history, i):
     match num:
         case 0: return ((i, 'F', None),)
         case 1:
-            #print(f"TEST: {(history + ((i, 'C', call_amount),))}")
+
             if get_chips(history + ((i, 'C', call_amount),), 1) <= 0 or get_chips(history + ((i, 'C', call_amount),), 2) <= 0:
                 return ((i, 'A', call_amount),)
             return ((i, 'C', call_amount),)
@@ -374,9 +373,7 @@ def get_chips(history, i):
     return chips
 
 
-def process_all_in(history):
 
-    pass
 
 if __name__ == '__main__':
     history = (

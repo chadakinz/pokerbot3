@@ -8,8 +8,16 @@ class NeuralNetwork:
         """
         Initialize the weights and hyperparameters of the neural network using arbitrary data size
         """
-        self.hidden_layer_weights = np.random.uniform(0, 1, size=(data_size + 1, hidden_layer_size))
-        self.output_layer_weights = np.random.uniform(0, 1, size=(hidden_layer_size + 1, classification_size))
+        self.hidden_layer_weights = np.random.normal(
+            0, np.sqrt(2.0 / data_size),
+            size=(data_size + 1, hidden_layer_size)
+        )
+
+        self.output_layer_weights = np.random.normal(
+            0, np.sqrt(2.0 / hidden_layer_size),
+            size=(hidden_layer_size + 1, classification_size)
+        )
+
         self.dec_rate = dec_rate
 
     def initialize_data(self, data, classification):
@@ -24,8 +32,6 @@ class NeuralNetwork:
 
 
     def train(self, r):
-
-
         for j in range(r):
             for i in range(self.x_train.shape[1]):
                 X = self.x_train[:, i]
@@ -54,6 +60,7 @@ class NeuralNetwork:
         :param X:
         :return: Z, A
         """
+
         biases = self.hidden_layer_weights[0]
         weights = self.hidden_layer_weights[1:]
 
@@ -131,6 +138,8 @@ class PolicyNetwork(NeuralNetwork):
 
     def sample_action(self, I):
         Z, A = self.input_to_hidden(I)
+
         T = self.hidden_to_output(Z)
+
         g = self.softmax(T)
         return np.random.choice(len(g), p = g), g

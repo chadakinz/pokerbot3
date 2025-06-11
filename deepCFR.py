@@ -42,9 +42,9 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, p
 
 
 if __name__ == '__main__':
-    T = 100
+    T = 40
     players = [1, 2]
-    K = 30
+    K = 200
     value_networks = {1: ValueNetwork(15, 6, 8), 2: ValueNetwork(15, 6, 8)}
     pol_networks = PolicyNetwork(15, 6, 8)
     value_memories = {1: Buffer(10000000000), 2: Buffer(10000000000)}
@@ -54,19 +54,18 @@ if __name__ == '__main__':
     print()
     print()
     for t in tqdm(range(1, T)):
-        history = initialize_tree(25)
+        history = initialize_tree(30)
         for i in players:
             for k in range(1, K):
                 p = get_next_turn(history)
                 traverse(history, i, p, t, value_memories[i], strategy_memory, value_networks[i], value_networks[3-i], pol_networks)
             value_networks[i] = ValueNetwork(15, 6, 8)
-            data, train, dec_rate = value_memories[i].sample(30)
+            data, train, dec_rate = value_memories[i].sample(200)
             value_networks[i].initialize_data(np.array(data), np.array(train))
             value_networks[i].dec_rate = 1/dec_rate
             value_networks[i].train(1)
 
-        data, train, dec_rate = strategy_memory.sample(30)
-        #print(f"data: {data}, train: {train}, dec_rate: {dec_rate}")
+        data, train, dec_rate = strategy_memory.sample(200)
         pol_networks.initialize_data(np.array(data), np.array(train))
         pol_networks.dec_rate = 1/dec_rate
         pol_networks.train(1)
