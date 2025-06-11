@@ -31,7 +31,6 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, p
         else:
             p = val2_net.regret_matching(infoset)
             na = np.random.choice(len(p), p = p)
-            #print(p)
             next_action = process_action(na, history, curr_player)
             next_history = history + next_action
             pol_mem.push((infoset, t, p))

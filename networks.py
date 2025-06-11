@@ -19,38 +19,52 @@ class NeuralNetwork:
         )
 
         self.dec_rate = dec_rate
+        self.batch_size = 1
 
     def initialize_data(self, data, classification):
         """
         Gives the neural network the data to create the training and testing sets
         """
-
         self.x_train = data
         self.y_train = classification
         self.x_train = self.x_train.T
         self.y_train = self.y_train.T
 
 
-    def train(self, r):
+    def train(self, r, memory, batch_size):
+        self.batch_size = batch_size
         for j in range(r):
-            for i in range(self.x_train.shape[1]):
-                X = self.x_train[:, i]
-                Y = self.y_train[:, i]
+            memory.shuffle()
+            for i in range(0, len(memory), batch_size):
+                data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
+                self.initialize_data(np.array(data), np.array(train))
+                self.dec_rate = 1/dec_rate
+
+                X = self.x_train
+                Y = self.y_train
                 Z, A = self.input_to_hidden(X)
                 T = self.hidden_to_output(Z)
                 g = self.softmax(T)
 
-                dg_dT = np.diag(g/T) - np.outer(g, g/T)
-                drel_dA = np.array([1 if x > 0 else 0 for x in A])
                 dR_dg = g - Y
-                S = dg_dT @ dR_dg
-                L = np.matmul(self.output_layer_weights[1:], S) * drel_dA
+                sum_term = np.sum(dR_dg * g, axis=1, keepdims=True)
+                #dg_dT = np.diag(g/T) - np.outer(g, g/T)
+                dZ_dA =  (A > 0).astype(np.float32)
+                #S = dg_dT @ dR_dg
+                dR_dT = g * (dR_dg - sum_term)
+                dR_dZ = dR_dT @ self.output_layer_weights[1:]  # (200, 8) @ (8, k) = (200, k)
+                dR_dA = dR_dZ * dZ_dA
+                dR_dHW = X[:, :, None] * dR_dA[:, None, :]  # (200, 15, 8)
 
-                self.output_layer_weights[1:] -=  (self.dec_rate ) * np.matmul(Z[:, np.newaxis], (S[:, np.newaxis].T))
-                self.output_layer_weights[0] -= (self.dec_rate ) * S
+                # Also compute weight and bias gradients
+                dR_dOW =  Z[:, :, None] * dR_dT[:, None, :]  # (k, 200) @ (200, 8) = (k, 8)
 
-                self.hidden_layer_weights[0] -= (self.dec_rate ) * L
-                self.hidden_layer_weights[1:] -= (self.dec_rate ) * np.matmul(X[:, np.newaxis], L[:, np.newaxis].T)
+
+                self.output_layer_weights[1:] -=  (self.dec_rate ) * np.mean(dR_dOW, axis=0)
+                self.output_layer_weights[0] -= (self.dec_rate ) * np.mean(dR_dT, axis=0)
+
+                self.hidden_layer_weights[0] -= (self.dec_rate ) * np.mean(dR_dA, axis=0)
+                self.hidden_layer_weights[1:] -= (self.dec_rate ) * np.mean(dR_dHW, axis=0)
 
 
     def input_to_hidden(self, X):
@@ -61,63 +75,82 @@ class NeuralNetwork:
         :return: Z, A
         """
 
-        biases = self.hidden_layer_weights[0]
+        biases = np.tile(self.hidden_layer_weights[0], (self.batch_size, 1))
         weights = self.hidden_layer_weights[1:]
 
         #print(weights.T)
-        A = biases + (weights.T @ X)
-        reLU = np.vectorize(lambda x: np.maximum(0, x))
-        Z = reLU(A)
+        A = biases + (X @ weights)
+
+        Z = np.maximum(0, A)
+
         return Z, A
 
     def hidden_to_output(self, Z):
         """
         Takes vector Z output from the hidden layer, and outputs vector T.
         """
-        biases = self.output_layer_weights[0]
+        biases = np.tile(self.output_layer_weights[0], (self.batch_size, 1))
         weights = self.output_layer_weights[1:]
-        T = biases + (weights.T @ Z)
+        T = biases + (Z @ weights)
         return T
     def softmax(self, T):
-            """
-            Apply softmax activation to our output vector T and get the distribution of our classification predictions
-            as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
-            return vector g.
-            """
-            exp_T = np.exp(T - np.max(T))
-            return exp_T / np.sum(exp_T)
+        """
+        Apply softmax activation to our output vector T and get the distribution of our classification predictions
+        as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
+        return vector g.
+        """
+        # Find max along each row (axis=1), keep dimensions for broadcasting
+        max_vals = np.max(T, axis=1, keepdims=True)  # shape: (200, 1)
+
+        # Subtract max from each row for numerical stability
+        T_stable = T - max_vals  # Broadcasting: (200, 8) - (200, 1)
+
+        # Apply exponential
+        exp_T = np.exp(T_stable)  # shape: (200, 8)
+
+        # Sum along each row and normalize
+        sum_exp = np.sum(exp_T, axis=1, keepdims=True)  # shape: (200, 1)
+
+        return exp_T / sum_exp  # Broadcasting: (200, 8) / (200, 1)
 
 
 class ValueNetwork(NeuralNetwork):
     def __init__(self, data_size, classification_size, hidden_layer_size, dec_rate = 10):
         super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
 
-    def train(self, r):
+    def train(self, r, memory, batch_size):
+        self.batch_size = batch_size
         for j in range(r):
-            for i in range(self.x_train.shape[1]):
-                X = self.x_train[:, i]  # Input vector (features)
-                Y = self.y_train[:, i]  # Target value(s)
+            memory.shuffle()
+            for i in range(0, len(memory), batch_size):
+                data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
+                self.initialize_data(np.array(data), np.array(train))
+                self.dec_rate = 1 / dec_rate
 
-                # Forward pass
-                Z, A = self.input_to_hidden(X)  # Hidden layer output (Z), pre-activation (A)
-                T = self.hidden_to_output(Z)  # Output layer (regression output)
+                X = self.x_train
+                Y = self.y_train
+                Z, A = self.input_to_hidden(X)
+                T = self.hidden_to_output(Z)
 
-                # Compute gradient of MSE loss w.r.t. output T
-                dR_dT = (T - Y)  # Assuming Y and T are both vectors
 
-                # Backpropagate to hidden layer
-                dT_dZ = self.output_layer_weights[1:]  # Shape: [hidden_size, output_size]
-                dR_dZ = dT_dZ @ dR_dT  # shape: [hidden_size]
-                dZ_dA = np.array([1 if a > 0 else 0 for a in A])  # ReLU derivative
-                dR_dA = dR_dZ * dZ_dA  # Element-wise multiply
+                dR_dT = T - Y
 
-                # Update output layer weights
-                self.output_layer_weights[1:] -= self.dec_rate * np.outer(Z, dR_dT)
-                self.output_layer_weights[0] -= self.dec_rate * dR_dT
+                # dg_dT = np.diag(g/T) - np.outer(g, g/T)
+                dZ_dA = (A > 0).astype(np.float32)
+                # S = dg_dT @ dR_dg
 
-                # Update hidden layer weights
-                self.hidden_layer_weights[1:] -= self.dec_rate * np.outer(X, dR_dA)
-                self.hidden_layer_weights[0] -= self.dec_rate * dR_dA
+                dR_dZ = dR_dT @ self.output_layer_weights[1:]  # (200, 8) @ (8, k) = (200, k)
+                dR_dA = dR_dZ * dZ_dA
+                dR_dHW = X[:, :, None] * dR_dA[:, None, :]  # (200, 15, 8)
+
+                # Also compute weight and bias gradients
+                dR_dOW = Z[:, :, None] * dR_dT[:, None, :]  # (k, 200) @ (200, 8) = (k, 8)
+
+                self.output_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dOW, axis=0)
+                self.output_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dT, axis=0)
+
+                self.hidden_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dA, axis=0)
+                self.hidden_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dHW, axis=0)
     def regret_matching(self, I):
         Z, A = self.input_to_hidden(I)
         T = self.hidden_to_output(Z)

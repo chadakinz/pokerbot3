@@ -41,3 +41,19 @@ class Buffer:
             s += i[1]
 
         return data, value, s
+
+    def sample_batch(self, start, end):
+        sample = self.buffer[start:end]
+        data = []
+        value = []
+        s = 0
+
+        for i in sample:
+            data.append(i[0])
+            value.append(i[1] * i[2])
+            s += i[1]
+
+        return data, value, s
+
+    def shuffle(self):
+        np.random.shuffle(self.buffer)
