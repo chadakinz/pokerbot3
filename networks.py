@@ -9,17 +9,18 @@ class NeuralNetwork:
         Initialize the weights and hyperparameters of the neural network using arbitrary data size
         """
         self.hidden_layer_weights = np.random.normal(
-            0, np.sqrt(2.0 / data_size),
+            0, np.sqrt(1 / ( (data_size))),
             size=(data_size + 1, hidden_layer_size)
         )
 
         self.output_layer_weights = np.random.normal(
-            0, np.sqrt(2.0 / hidden_layer_size),
+            0, np.sqrt(1 / ( (hidden_layer_size))),
             size=(hidden_layer_size + 1, classification_size)
         )
 
         self.dec_rate = dec_rate
         self.batch_size = 1
+        self.alpha = .01
 
     def initialize_data(self, data, classification):
         """
@@ -27,44 +28,47 @@ class NeuralNetwork:
         """
         self.x_train = data
         self.y_train = classification
-        self.x_train = self.x_train.T
-        self.y_train = self.y_train.T
+
 
 
     def train(self, r, memory, batch_size):
-        self.batch_size = batch_size
+
         for j in range(r):
             memory.shuffle()
             for i in range(0, len(memory), batch_size):
                 data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
-                self.initialize_data(np.array(data), np.array(train))
-                self.dec_rate = 1/dec_rate
+                self.batch_size =  min(len(memory), batch_size) - i
+                if self.batch_size <= 0:
+                    pass
+                else:
+                    self.initialize_data(np.array(data), np.array(train))
+                    self.dec_rate = 1/dec_rate
 
-                X = self.x_train
-                Y = self.y_train
-                Z, A = self.input_to_hidden(X)
-                T = self.hidden_to_output(Z)
-                g = self.softmax(T)
+                    X = self.x_train
+                    Y = self.y_train
+                    Z, A = self.input_to_hidden(X)
+                    T = self.hidden_to_output(Z)
+                    g = self.softmax(T)
 
-                dR_dg = g - Y
-                sum_term = np.sum(dR_dg * g, axis=1, keepdims=True)
-                #dg_dT = np.diag(g/T) - np.outer(g, g/T)
-                dZ_dA =  (A > 0).astype(np.float32)
-                #S = dg_dT @ dR_dg
-                dR_dT = g * (dR_dg - sum_term)
-                dR_dZ = dR_dT @ self.output_layer_weights[1:]  # (200, 8) @ (8, k) = (200, k)
-                dR_dA = dR_dZ * dZ_dA
-                dR_dHW = X[:, :, None] * dR_dA[:, None, :]  # (200, 15, 8)
+                    dR_dg = g - Y
+                    sum_term = np.sum(dR_dg * g, axis=1, keepdims=True)
 
-                # Also compute weight and bias gradients
-                dR_dOW =  Z[:, :, None] * dR_dT[:, None, :]  # (k, 200) @ (200, 8) = (k, 8)
+                    dZ_dA =  np.where(A > 0, 1.0, self.alpha)
+
+                    dR_dT = g * (dR_dg - sum_term)
+                    dR_dZ = dR_dT @ self.output_layer_weights[1:].T
+                    dR_dA = dR_dZ * dZ_dA
+                    dR_dHW = X[:, :, None] * dR_dA[:, None, :]
 
 
-                self.output_layer_weights[1:] -=  (self.dec_rate ) * np.mean(dR_dOW, axis=0)
-                self.output_layer_weights[0] -= (self.dec_rate ) * np.mean(dR_dT, axis=0)
+                    dR_dOW =  Z[:, :, None] * dR_dT[:, None, :]
 
-                self.hidden_layer_weights[0] -= (self.dec_rate ) * np.mean(dR_dA, axis=0)
-                self.hidden_layer_weights[1:] -= (self.dec_rate ) * np.mean(dR_dHW, axis=0)
+
+                    self.output_layer_weights[1:] -=  (1/6) * (self.dec_rate ) * np.mean(dR_dOW, axis=0)
+                    self.output_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dT, axis=0)
+
+                    self.hidden_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dA, axis=0)
+                    self.hidden_layer_weights[1:] -= (1/6) * (self.dec_rate ) * np.mean(dR_dHW, axis=0)
 
 
     def input_to_hidden(self, X):
@@ -78,10 +82,10 @@ class NeuralNetwork:
         biases = np.tile(self.hidden_layer_weights[0], (self.batch_size, 1))
         weights = self.hidden_layer_weights[1:]
 
-        #print(weights.T)
+
         A = biases + (X @ weights)
 
-        Z = np.maximum(0, A)
+        Z = np.where(A > 0, A, self.alpha * A)
 
         return Z, A
 
@@ -99,19 +103,50 @@ class NeuralNetwork:
         as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
         return vector g.
         """
-        # Find max along each row (axis=1), keep dimensions for broadcasting
-        max_vals = np.max(T, axis=1, keepdims=True)  # shape: (200, 1)
 
-        # Subtract max from each row for numerical stability
-        T_stable = T - max_vals  # Broadcasting: (200, 8) - (200, 1)
+        max_vals = np.max(T, axis=1, keepdims=True)
 
-        # Apply exponential
-        exp_T = np.exp(T_stable)  # shape: (200, 8)
+        T_stable = T - max_vals
 
-        # Sum along each row and normalize
-        sum_exp = np.sum(exp_T, axis=1, keepdims=True)  # shape: (200, 1)
 
-        return exp_T / sum_exp  # Broadcasting: (200, 8) / (200, 1)
+        exp_T = np.exp(T_stable)
+
+        sum_exp = np.sum(exp_T, axis=1, keepdims=True)
+
+        return exp_T / sum_exp
+
+    def single_input_to_hidden(self, X):
+        """
+        Applies weights and biases to the input vector X and returns vector Z = vector reLU(A)
+        Returns both Z and A for partial derivative calculations in gradient descent.
+        :param X:
+        :return: Z, A
+        """
+        biases = self.hidden_layer_weights[0]
+        weights = self.hidden_layer_weights[1:]
+
+        # print(weights.T)
+        A = biases + (weights.T @ X)
+        Z = np.where(A > 0, A, self.alpha * A)
+        return Z, A
+
+    def single_hidden_to_output(self, Z):
+        """
+        Takes vector Z output from the hidden layer, and outputs vector T.
+        """
+        biases = self.output_layer_weights[0]
+        weights = self.output_layer_weights[1:]
+        T = biases + (weights.T @ Z)
+        return T
+
+    def single_softmax(self, T):
+        """
+        Apply softmax activation to our output vector T and get the distribution of our classification predictions
+        as probabilities from [0, 1]. Apply the log function to vector T in order to prevent divergence and
+        return vector g.
+        """
+        exp_T = np.exp(T - np.max(T))
+        return exp_T / np.sum(exp_T)
 
 
 class ValueNetwork(NeuralNetwork):
@@ -119,41 +154,44 @@ class ValueNetwork(NeuralNetwork):
         super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
 
     def train(self, r, memory, batch_size):
-        self.batch_size = batch_size
         for j in range(r):
             memory.shuffle()
             for i in range(0, len(memory), batch_size):
-                data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
-                self.initialize_data(np.array(data), np.array(train))
-                self.dec_rate = 1 / dec_rate
 
-                X = self.x_train
-                Y = self.y_train
-                Z, A = self.input_to_hidden(X)
-                T = self.hidden_to_output(Z)
+                self.batch_size = min(len(memory), batch_size) - i
+                if self.batch_size <= 0:
+
+                    pass
+                else:
+                    data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
+                    self.initialize_data(np.array(data), np.array(train))
+                    self.dec_rate = 1 / dec_rate
+
+                    X = self.x_train
+                    Y = self.y_train
+                    Z, A = self.input_to_hidden(X)
+                    T = self.hidden_to_output(Z)
 
 
-                dR_dT = T - Y
+                    dR_dT = T - Y
 
-                # dg_dT = np.diag(g/T) - np.outer(g, g/T)
-                dZ_dA = (A > 0).astype(np.float32)
-                # S = dg_dT @ dR_dg
+                    dZ_dA = (A > 0).astype(np.float32)
 
-                dR_dZ = dR_dT @ self.output_layer_weights[1:]  # (200, 8) @ (8, k) = (200, k)
-                dR_dA = dR_dZ * dZ_dA
-                dR_dHW = X[:, :, None] * dR_dA[:, None, :]  # (200, 15, 8)
+                    dR_dZ = dR_dT @ self.output_layer_weights[1:].T
 
-                # Also compute weight and bias gradients
-                dR_dOW = Z[:, :, None] * dR_dT[:, None, :]  # (k, 200) @ (200, 8) = (k, 8)
+                    dR_dA = dR_dZ * dZ_dA
+                    dR_dHW = X[:, :, None] * dR_dA[:, None, :]
 
-                self.output_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dOW, axis=0)
-                self.output_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dT, axis=0)
+                    dR_dOW = Z[:, :, None] * dR_dT[:, None, :]
 
-                self.hidden_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dA, axis=0)
-                self.hidden_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dHW, axis=0)
+                    self.output_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dOW, axis=0)
+                    self.output_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dT, axis=0)
+
+                    self.hidden_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dA, axis=0)
+                    self.hidden_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dHW, axis=0)
     def regret_matching(self, I):
-        Z, A = self.input_to_hidden(I)
-        T = self.hidden_to_output(Z)
+        Z, A = self.single_input_to_hidden(I)
+        T = self.single_hidden_to_output(Z)
         if np.all(T <= 0):
             return np.ones_like(T) / len(T)
 
@@ -170,9 +208,9 @@ class PolicyNetwork(NeuralNetwork):
         super().__init__(data_size, classification_size, hidden_layer_size, dec_rate)
 
     def sample_action(self, I):
-        Z, A = self.input_to_hidden(I)
+        Z, A = self.single_input_to_hidden(I)
 
-        T = self.hidden_to_output(Z)
+        T = self.single_hidden_to_output(Z)
 
-        g = self.softmax(T)
+        g = self.single_softmax(T)
         return np.random.choice(len(g), p = g), g

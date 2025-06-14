@@ -7,9 +7,11 @@ from tqdm import tqdm
 def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, pol_net):
     #print(history)
     if is_terminal(history):
-
         return utility(history, i)
-    infoset = get_infoset(history, curr_player)
+    if curr_player != 'c':
+        infoset = normalize_infoset(get_infoset(history, curr_player))
+    else:
+        infoset = get_infoset(history, curr_player)
     if curr_player == i:
         regret = []
         weighted_value = []
@@ -41,34 +43,25 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, p
 
 
 if __name__ == '__main__':
-    T = 40
+    T = 100
     players = [1, 2]
-    K = 200
+    K = 1000
     value_networks = {1: ValueNetwork(15, 6, 8), 2: ValueNetwork(15, 6, 8)}
     pol_networks = PolicyNetwork(15, 6, 8)
-    value_memories = {1: Buffer(10000000000), 2: Buffer(10000000000)}
-    strategy_memory = Buffer(10000000000)
+    value_memories = {1: Buffer(1000000), 2: Buffer(1000000)}
+    strategy_memory = Buffer(1000000)
     print(pol_networks.output_layer_weights)
     print(pol_networks.hidden_layer_weights)
-    print()
-    print()
+    print("\n\n")
     for t in tqdm(range(1, T)):
-        history = initialize_tree(30)
+        history = initialize_tree(40)
         for i in players:
             for k in range(1, K):
                 p = get_next_turn(history)
                 traverse(history, i, p, t, value_memories[i], strategy_memory, value_networks[i], value_networks[3-i], pol_networks)
             value_networks[i] = ValueNetwork(15, 6, 8)
-            data, train, dec_rate = value_memories[i].sample(200)
-            value_networks[i].initialize_data(np.array(data), np.array(train))
-            value_networks[i].dec_rate = 1/dec_rate
-            value_networks[i].train(1)
-
-        data, train, dec_rate = strategy_memory.sample(200)
-        pol_networks.initialize_data(np.array(data), np.array(train))
-        pol_networks.dec_rate = 1/dec_rate
-        pol_networks.train(1)
-
+            value_networks[i].train(40, value_memories[i], 1000)
+        pol_networks.train(40, strategy_memory, 1000)
     print(pol_networks.output_layer_weights)
     print("hidden layer")
     print(pol_networks.hidden_layer_weights)

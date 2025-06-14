@@ -2,7 +2,9 @@
 import numpy as np
 import random
 
-
+def normalize_infoset(infoset):
+    max_values = np.array([15, 15, 1, 25, 50, 1, 25, 50, 1, 25, 50, 1, 25, 50, 4])
+    return infoset/max_values
 def chance_action(action):
     return random.sample(action[1], action[0])
 
@@ -57,3 +59,6 @@ class Buffer:
 
     def shuffle(self):
         np.random.shuffle(self.buffer)
+
+    def __len__(self):
+        return len(self.buffer)

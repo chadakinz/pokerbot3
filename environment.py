@@ -21,12 +21,10 @@ def initialize_tree(bb_max_range, ):
 
 def get_next_turn(history):
     n = len(history)
-    #print(history)
 
     if n == 7: return 2
 
     elif n > 7:
-        #print("INSIDE n> 7")
         count = 0
         for item in reversed(history):
             if item[0] == 'c':
@@ -36,7 +34,6 @@ def get_next_turn(history):
 
         if history[-1][1] == "C":
             if count >= 1:
-                #print("HELLO????")
                 return 'c'
             else:
                 if history[-1][0] == 1: return 2
@@ -55,16 +52,12 @@ def get_next_turn(history):
 
 
 def is_terminal(history):
-    #print(history)
     if history[-1][1] == "F":
         return True
 
-    # Check if river is dealt
     if get_betting_round(history) != 3:
         return False
 
-
-    # If river is dealt, and any action is 'A' (check), it's terminal
     for item in history:
         if item[1] == "A":
             return True
@@ -77,8 +70,7 @@ def is_terminal(history):
             return True
     return False
 
-#TODO NEEDS TO BE TESTED
-
+#TODO NEEDS to be tested
 def utility(history, i):
     if i == 1:
         opp = 2
@@ -91,8 +83,6 @@ def utility(history, i):
         opp_chips = history[0][1]
     chips_staked = chips - get_chips(history, i)
     opp_chips_staked = opp_chips - get_chips(history, opp)
-
-
 
     if history[-1][1] == 'F' and history[-1][0] == i:
         return -chips_staked
@@ -109,7 +99,6 @@ def utility(history, i):
 
 def hand_winner(curr_hand, opp_hand):
     """Curr hand and opp hand in form [As, Aj, 8h, 7h, 5h], [Ks, Kj, 8h, 7h, 5h]"""
-    #(curr_hand, opp_hand)
     curr_score = evaluate(curr_hand)
     opp_score = evaluate(opp_hand)
 
@@ -156,7 +145,7 @@ def get_infoset(history, curr_player):
     [Player1_Chips, Player2_Chips, .7, 4, 2, .7, 0, 0, 0 ,0 ,0 ,0 ,0 ,0]
     Use get_equity to get the equity it is implemented for you already
     """
-    ### (stack size, opp stack size, equity, pot size, raise count, check raise?, betting round)
+
     if curr_player == 'c':
         return history
 
@@ -254,7 +243,6 @@ def get_potsize(history):
     return potsize
 
 def get_equity(cards):
-    #print(f"CARDS: {cards}")
     return _equity(cards[:2], cards[2:], 10000)
 
 def _equity(hero_cards, board, num_iter):
@@ -269,8 +257,6 @@ def _equity(hero_cards, board, num_iter):
     for i in board:
         new_board.append(cards.Card(i))
 
-
-    #print(f"Equity.py: {equity.py_all_hands_vs_range(hero_dist, villain_dist, board, num_iter)}")
     try:
         return equity.py_all_hands_vs_range(hero_dist, villain_dist, new_board, num_iter)[(cards.Card(hero_cards[0]), cards.Card(hero_cards[1]))]
     except:
@@ -279,28 +265,23 @@ def _equity(hero_cards, board, num_iter):
 
 def process_action(num, history, i):
     call_amount = get_call_amount(history)
+    potsize = get_potsize(history)
     match num:
         case 0: return ((i, 'F', None),)
         case 1:
-
             if get_chips(history + ((i, 'C', call_amount),), 1) <= 0 or get_chips(history + ((i, 'C', call_amount),), 2) <= 0:
                 return ((i, 'A', call_amount),)
-            return ((i, 'C', call_amount),)
+            else: return ((i, 'C', call_amount),)
         case 2:
-            potsize = get_potsize(history)
             raise_amount = round(.25 * potsize)
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
-            if raise_amount < call_amount:
+            elif raise_amount < call_amount:
                 return (i, "C", call_amount) , (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history,2)))
             else:
-
-
                 return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history,2)))
 
-
         case 3:
-            potsize = get_potsize(history)
             raise_amount = round(.5 * potsize)
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
@@ -312,7 +293,6 @@ def process_action(num, history, i):
 
 
         case 4:
-            potsize = get_potsize(history)
             raise_amount = potsize
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
@@ -342,34 +322,23 @@ def get_call_amount(history):
     {player_id: {'R': amount}} or {player_id: {'C': amount}}, etc.
     """
     for item in reversed(history):
-        if item[0] == 'c':
-            return 0
-        elif item[1] == "C":
-            return 0
-        elif item[1] == "F":
-            return 0
-        elif item[1] == "R":
-            return item[2]
+        if item[0] == 'c': return 0
+        elif item[1] == "C": return 0
+        elif item[1] == "F": return 0
+        elif item[1] == "R": return item[2]
     return 0
 
 
 def get_chips(history, i):
     """
     Returns the remaining chips for player i after all call and raise actions.
-
     :param history: tuple of game state
     :param i: player index (1 or 2)
     :return: int - chips remaining
     """
-
-    # Get initial chip count
     chips = history[0][1] if i == 1 else history[1][1]
-
-    # Loop through history actions
     for item in history[4:]:
-        #print(f"ITEM: {item}")
-        if item[1] == "C" or item[1] == "R" and item[0] == i:
-            chips -= item[2]
+        if item[1] == "C" or item[1] == "R" and item[0] == i: chips -= item[2]
     return chips
 
 
