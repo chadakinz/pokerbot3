@@ -33,7 +33,7 @@ def get_next_turn(history):
                 count += 1
 
         if history[-1][1] == "C":
-            if count >= 1:
+            if count > 1:
                 return 'c'
             else:
                 if history[-1][0] == 1: return 2
@@ -64,9 +64,11 @@ def is_terminal(history):
 
     check = False
     for item in reversed(history):
-        if item[1] == "C":
+        if item[0] == 'c':
+            return False
+        if item[1] == "C" and not check:
             check = True
-        if check and (item[1] == "R" or item[1] == "C"):
+        elif check and (item[1] == "R" or item[1] == "C"):
             return True
     return False
 
@@ -74,7 +76,6 @@ def is_terminal(history):
 def utility(history, i):
     if i == 1:
         opp = 2
-
         chips = history[0][1]
         opp_chips = history[1][1]
     else:
@@ -82,6 +83,7 @@ def utility(history, i):
         chips = history[1][1]
         opp_chips = history[0][1]
     chips_staked = chips - get_chips(history, i)
+
     opp_chips_staked = opp_chips - get_chips(history, opp)
 
     if history[-1][1] == 'F' and history[-1][0] == i:
@@ -103,9 +105,9 @@ def hand_winner(curr_hand, opp_hand):
     opp_score = evaluate(opp_hand)
 
     if curr_score > opp_score:
-        return 1
-    elif curr_score < opp_score:
         return -1
+    elif curr_score < opp_score:
+        return 1
     else:
         return 0
 
@@ -157,10 +159,8 @@ def get_infoset(history, curr_player):
     infoset[1] = p2_chips if curr_player == 1 else p1_chips
     if curr_player == 1:
         cards = history[2][1]
-        opponent = 2
     else:
         cards = history[3][1]
-        opponent = 1
     raise_count = 0
     # Track board and current street
     board = []
@@ -338,7 +338,7 @@ def get_chips(history, i):
     """
     chips = history[0][1] if i == 1 else history[1][1]
     for item in history[4:]:
-        if item[1] == "C" or item[1] == "R" and item[0] == i: chips -= item[2]
+        if (item[1] == "C" or item[1] == "R" or item[1] == "A") and item[0] == i: chips -= item[2]
     return chips
 
 
