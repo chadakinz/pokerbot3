@@ -72,7 +72,7 @@ def is_terminal(history):
             return True
     return False
 
-#TODO NEEDS to be tested
+
 def utility(history, i):
     if i == 1:
         opp = 2

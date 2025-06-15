@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, pol_net):
-    #print(history)
+    print(history)
     if is_terminal(history):
         return utility(history, i)
     if curr_player != 'c':
@@ -43,9 +43,9 @@ def traverse(history, i, curr_player, t, val_mem, pol_mem, val1_net, val2_net, p
 
 
 if __name__ == '__main__':
-    T = 100
+    T = 20
     players = [1, 2]
-    K = 1000
+    K = 10
     value_networks = {1: ValueNetwork(15, 6, 8), 2: ValueNetwork(15, 6, 8)}
     pol_networks = PolicyNetwork(15, 6, 8)
     value_memories = {1: Buffer(1000000), 2: Buffer(1000000)}
@@ -54,14 +54,14 @@ if __name__ == '__main__':
     print(pol_networks.hidden_layer_weights)
     print("\n\n")
     for t in tqdm(range(1, T)):
-        history = initialize_tree(40)
+        history = initialize_tree(25)
         for i in players:
             for k in range(1, K):
                 p = get_next_turn(history)
                 traverse(history, i, p, t, value_memories[i], strategy_memory, value_networks[i], value_networks[3-i], pol_networks)
             value_networks[i] = ValueNetwork(15, 6, 8)
-            value_networks[i].train(40, value_memories[i], 1000)
-        pol_networks.train(40, strategy_memory, 1000)
+            value_networks[i].train(40, value_memories[i], 400)
+        pol_networks.train(40, strategy_memory, 400)
     print(pol_networks.output_layer_weights)
     print("hidden layer")
     print(pol_networks.hidden_layer_weights)

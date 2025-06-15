@@ -17,16 +17,26 @@ class EnvironmentTest(unittest.TestCase):
         for history, i, label in utility_histories:
             self.assertEqual(utility(history, i), label, f"History: {history}, Player: {i}, Received: "
                                                          f"{utility(history, i)}, Expected: {label}")
+
     def test_hand_winner(self):
         pass
+
     def test_get_potsize(self):
         for history, label in get_potsize_histories:
             self.assertEqual(get_potsize(history), label, f"History: {history}, Received: {get_potsize(history)}, "
                                                           f"Expected: {label}")
     def test_get_infoset(self):
         pass
-    def test_process_action(self):
+    def test_get_chips(self):
         pass
+
+
+    def test_process_action(self):
+        for history, action, i, label in process_action_histories:
+            self.assertEqual(process_action(action, history, i), label, f"History: {history}, "
+                                                                        f"Received: {process_action(action, history, i)}, "
+                                                          f"Expected: {label}")
+
 
 if __name__ == '__main__':
     unittest.main()
