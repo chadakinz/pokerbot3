@@ -8,11 +8,6 @@ def normalize_infoset(infoset):
 def chance_action(action):
     return random.sample(action[1], action[0])
 
-class Player:
-    def __init__(self, id):
-        self.id = id
-
-        pass
 
 class Buffer:
     def __init__(self, size):

@@ -1,5 +1,4 @@
 import numpy as np
-from attr import *
 
 
 class NeuralNetwork:
@@ -36,39 +35,39 @@ class NeuralNetwork:
         for j in range(r):
             memory.shuffle()
             for i in range(0, len(memory), batch_size):
-                data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
-                self.batch_size =  min(len(memory), batch_size) - i
-                if self.batch_size <= 0:
-                    pass
-                else:
-                    self.initialize_data(np.array(data), np.array(train))
-                    self.dec_rate = 1/dec_rate
+                data, train, dec_rate = memory.sample_batch(i, min(len(memory), i + batch_size))
+                self.batch_size =   min(batch_size, len(memory) - i)
 
-                    X = self.x_train
-                    Y = self.y_train
-                    Z, A = self.input_to_hidden(X)
-                    T = self.hidden_to_output(Z)
-                    g = self.softmax(T)
+                self.initialize_data(np.array(data), np.array(train))
 
-                    dR_dg = g - Y
-                    sum_term = np.sum(dR_dg * g, axis=1, keepdims=True)
-
-                    dZ_dA =  np.where(A > 0, 1.0, self.alpha)
-
-                    dR_dT = g * (dR_dg - sum_term)
-                    dR_dZ = dR_dT @ self.output_layer_weights[1:].T
-                    dR_dA = dR_dZ * dZ_dA
-                    dR_dHW = X[:, :, None] * dR_dA[:, None, :]
+                self.dec_rate = 1/dec_rate
 
 
-                    dR_dOW =  Z[:, :, None] * dR_dT[:, None, :]
+                X = self.x_train
+                Y = self.y_train
+                Z, A = self.input_to_hidden(X)
+                T = self.hidden_to_output(Z)
+                g = self.softmax(T)
+
+                dR_dg = g - Y
+                sum_term = np.sum(dR_dg * g, axis=1, keepdims=True)
+
+                dZ_dA =  np.where(A > 0, 1.0, self.alpha)
+
+                dR_dT = g * (dR_dg - sum_term)
+                dR_dZ = dR_dT @ self.output_layer_weights[1:].T
+                dR_dA = dR_dZ * dZ_dA
+                dR_dHW = X[:, :, None] * dR_dA[:, None, :]
 
 
-                    self.output_layer_weights[1:] -=  (1/6) * (self.dec_rate ) * np.mean(dR_dOW, axis=0)
-                    self.output_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dT, axis=0)
+                dR_dOW =  Z[:, :, None] * dR_dT[:, None, :]
 
-                    self.hidden_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dA, axis=0)
-                    self.hidden_layer_weights[1:] -= (1/6) * (self.dec_rate ) * np.mean(dR_dHW, axis=0)
+
+                self.output_layer_weights[1:] -=  (1/6) * (self.dec_rate ) * np.mean(dR_dOW, axis=0)
+                self.output_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dT, axis=0)
+
+                self.hidden_layer_weights[0] -= (1/6) * (self.dec_rate ) * np.mean(dR_dA, axis=0)
+                self.hidden_layer_weights[1:] -= (1/6) * (self.dec_rate ) * np.mean(dR_dHW, axis=0)
 
 
     def input_to_hidden(self, X):
@@ -158,37 +157,34 @@ class ValueNetwork(NeuralNetwork):
             memory.shuffle()
             for i in range(0, len(memory), batch_size):
 
-                self.batch_size = min(len(memory), batch_size) - i
-                if self.batch_size <= 0:
+                self.batch_size =  min(batch_size, len(memory) - i)
 
-                    pass
-                else:
-                    data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size))
-                    self.initialize_data(np.array(data), np.array(train))
-                    self.dec_rate = 1 / dec_rate
+                data, train, dec_rate = memory.sample_batch(i, min(len(memory), batch_size + i))
+                self.initialize_data(np.array(data), np.array(train))
+                self.dec_rate = 1 / dec_rate
 
-                    X = self.x_train
-                    Y = self.y_train
-                    Z, A = self.input_to_hidden(X)
-                    T = self.hidden_to_output(Z)
+                X = self.x_train
+                Y = self.y_train
+                Z, A = self.input_to_hidden(X)
+                T = self.hidden_to_output(Z)
 
 
-                    dR_dT = T - Y
+                dR_dT = T - Y
 
-                    dZ_dA = (A > 0).astype(np.float32)
+                dZ_dA = np.where(A > 0, 1.0, self.alpha)
 
-                    dR_dZ = dR_dT @ self.output_layer_weights[1:].T
+                dR_dZ = dR_dT @ self.output_layer_weights[1:].T
 
-                    dR_dA = dR_dZ * dZ_dA
-                    dR_dHW = X[:, :, None] * dR_dA[:, None, :]
+                dR_dA = dR_dZ * dZ_dA
+                dR_dHW = X[:, :, None] * dR_dA[:, None, :]
 
-                    dR_dOW = Z[:, :, None] * dR_dT[:, None, :]
+                dR_dOW = Z[:, :, None] * dR_dT[:, None, :]
 
-                    self.output_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dOW, axis=0)
-                    self.output_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dT, axis=0)
+                self.output_layer_weights[1:] -= (1/6) * (self.dec_rate) * np.mean(dR_dOW, axis=0)
+                self.output_layer_weights[0] -= (1/6) *(self.dec_rate) * np.mean(dR_dT, axis=0)
 
-                    self.hidden_layer_weights[0] -= (self.dec_rate) * np.mean(dR_dA, axis=0)
-                    self.hidden_layer_weights[1:] -= (self.dec_rate) * np.mean(dR_dHW, axis=0)
+                self.hidden_layer_weights[0] -= (1/6)* (self.dec_rate) * np.mean(dR_dA, axis=0)
+                self.hidden_layer_weights[1:] -= (1/6)* (self.dec_rate) * np.mean(dR_dHW, axis=0)
     def regret_matching(self, I):
         Z, A = self.single_input_to_hidden(I)
         T = self.single_hidden_to_output(Z)

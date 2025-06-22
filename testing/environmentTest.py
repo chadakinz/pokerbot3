@@ -25,6 +25,7 @@ class EnvironmentTest(unittest.TestCase):
         for history, label in get_potsize_histories:
             self.assertEqual(get_potsize(history), label, f"History: {history}, Received: {get_potsize(history)}, "
                                                           f"Expected: {label}")
+    #TODO important
     def test_get_infoset(self):
         pass
     def test_get_chips(self):

@@ -172,7 +172,7 @@ def get_infoset(history, curr_player):
             infoset[2 + 3 * count + 1] = raise_count
             infoset[2 + 3 * count + 2] = potsize
             raise_count = 0
-            potsize = 0
+
             board += history[j][1]
             count += 1
 
@@ -266,6 +266,7 @@ def _equity(hero_cards, board, num_iter):
 def process_action(num, history, i):
     call_amount = get_call_amount(history)
     potsize = get_potsize(history)
+    opp = 2 if i == 1 else 1
     match num:
         case 0: return ((i, 'F', None),)
         case 1:
@@ -277,19 +278,19 @@ def process_action(num, history, i):
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
             elif raise_amount < call_amount:
-                return (i, "C", call_amount) , (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history,2)))
+                return (i, "C", call_amount) , (i, 'R',  min(call_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history,opp)))
             else:
-                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history,2)))
+                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history,opp)))
 
         case 3:
             raise_amount = round(.5 * potsize)
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history, opp)))
             else:
 
-                return (i, "C", call_amount), (i, 'R', min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount), (i, 'R', min(raise_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history, opp)))
 
 
         case 4:
@@ -297,20 +298,20 @@ def process_action(num, history, i):
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount), (i, 'R',  min(call_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history, opp)))
             else:
 
-                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount), (i, 'R',  min(raise_amount, get_chips(history + ((i, 'C', call_amount),), i) , get_chips(history, opp)))
 
         case 5:
             raise_amount = get_chips(history, i)
             if call_amount >= get_chips(history, i):
                 return ((i, 'A', call_amount),)
             if raise_amount < call_amount:
-                return (i, "C", call_amount), (i, 'R', min(call_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount), (i, 'R', min(call_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history, opp)))
             else:
 
-                return (i, "C", call_amount) , (i, 'R',  min(raise_amount, get_chips(history, 1), get_chips(history, 2)))
+                return (i, "C", call_amount) , (i, 'R',  min(raise_amount, get_chips(history + ((i, 'C', call_amount),), i), get_chips(history, opp)))
 
 
 def get_call_amount(history):
