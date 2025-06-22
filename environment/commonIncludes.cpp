@@ -7,7 +7,7 @@ Deck sharedDeck;
 void initializeSharedDeck() {
     for (const auto& suit : suits) {
         for (const auto& rank : ranks) {
-            sharedDeck.push_back(rank + suit);
+            sharedDeck.emplace_back(rank + suit);
         }
     }
 }
