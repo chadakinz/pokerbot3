@@ -1,5 +1,5 @@
-#include "commonIncludes.h"
-#include "attr.h"
+#include "include/commonIncludes.h"
+#include "include/attr.h"
 
 Deck chance_sample(int num_cards, const Deck& deck){
     int n = deck.size();

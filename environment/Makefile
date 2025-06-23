@@ -6,10 +6,10 @@ output = environment
 all: $(output)
 
 $(output): $(objects)
-	$(compiler) $(flags) $(objects) -o ./src/$(output)
+	$(compiler) $(flags) $(objects) -L./lib -lpheval -o ./src/$(output)
 
 %.o: %.cpp
-	$(compiler) $(flags) -c $< -o $@
+	$(compiler) $(flags) -I./include -c $< -o $@
 
 clean:
 	rm -f *.o ./src/$(output)

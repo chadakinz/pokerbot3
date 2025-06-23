@@ -1,6 +1,6 @@
-#include "commonIncludes.h"
-#include "attr.h"
-#include "PokerHandEvaluator/cpp/include/phevaluator.h"
+#include <commonIncludes.h>
+#include <attr.h>
+#include <phevaluator/phevaluator.h>
 
 
 History intialize_tree(int max_amount){
@@ -19,6 +19,33 @@ History intialize_tree(int max_amount){
 
     return game_tree;
 }
+
+bool is_check(History history){
+    bool check = false;
+    for (auto it = history.rbegin() + 1; it != history.rend(); it ++){
+        auto item = *it;
+        if (std::get<0>(item) == 'c') break;
+        if ((std::get<1>(item) == 'R') || (std::get<1>(item) == 'C')) {
+            check = true;
+            break;
+        }
+    }
+    return check;
+}
+
+bool all_in_checker(History history){
+    for(int i = 0; i != 4; i++){
+        auto item = *(history.rbegin() + i);
+        bool chance_action_b =  std::holds_alternative<chance_action>(item);
+        if(!chance_action_b){
+            if(std::get<1>(item) == 'A'){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //WARNING: function doesnt check if history is on the last street
 int get_next_turn(History history){
     int n = history.size();
@@ -69,18 +96,7 @@ bool is_terminal(History history){
     else return false;
 
 }
-bool is_check(History history){
-    bool check = false;
-    for (auto it = history.rbegin() + 1; it != history.rend(); it ++){
-        auto item = *it;
-        if (std::get<0>(item) == 'c') break;
-        if ((std::get<1>(item) == 'R') || (std::get<1>(item) == 'C')) {
-            check = true;
-            break;
-        }
-    }
-    return check;
-}
+
 
 int utility(History history, int i){
     auto last_action = *history.rbegin();
@@ -168,23 +184,11 @@ History process_action(int num; const& History history, int i){
             return {player_action(i, "C", call_amount), player_action(i, 'R',  std::min({chips - call_amount, raise_amount, opp_chips}))};
     }
 }
-bool all_in_checker(History history){
-    for(int i = 0; i != 4; i++){
-        auto item = *(history.rbegin() + i);
-        bool chance_action_b =  std::holds_alternative<chance_action>(item);
-        if(!chance_action_b){
-            if(std::get<1>(item) == 'A'){
-                return true;
-            }
-        }
-    }
-    return false;
-}
 
 int get_betting_round(History history){
     int count = 0;
     for(auto action = history.begin(); action != history.end(); action++){
-        if (std::get<0>(action) == 'c') count ++;
+        if (std::get<0>(*action) == 'c') count ++;
     }
     return count;
 }
@@ -196,11 +200,11 @@ int get_chips(History history, int i){
         int chips = std::get<1>((*(history.begin() + 1)));
     }
     for(auto action = history.begin(); action != history.end(); action++){
-        bool chance_action_b =  std::holds_alternative<chance_action>(action);
-        auto player = std::get<0>(action);
+        bool chance_action_b =  std::holds_alternative<chance_action>(*action);
+        auto player = std::get<0>(*action);
         if (!chance_action_b){
             if (player == i){
-                chips -= std::get<2>(action);
+                chips -= std::get<2>(*action);
             }
 
         }
@@ -238,16 +242,43 @@ std::vector<int> process_hand(Deck hand){
 }
 //TODO finish function
 int process_card(std::string card){
-    return 0;
+    char rank = card[0];
+    int rank_val;
+    char suit = card[1];
+    int suit_val;
+    if (rank == 'T') rank_val = 8;
+    else if (rank == 'J') rank_val = 9;
+    else if (rank == 'Q') rank_val = 10;
+    else if (rank == 'K') rank_val = 11;
+    else if (rank == 'A') rank_val = 12;
+    else{
+        rank_val = rank - ('0' + 2);
+    }
+    if (suit == 'c') suit_val = 0;
+    else if (suit == 'd') suit_val = 1;
+    else if (suit == 'h') suit_val = 2;
+    else if (suit == 's') suit_val = 3;
+
+    return rank_val*4 + suit_val;
+
 }
 int get_call_amount(History history){
     auto last_action = *history.rbegin();
     return last_player_act = std::get<2>(last_action);
 
 }
-//TODO finish function
+
 int get_potsize(History history){
-    return 0;
+    int potsize = 0;
+    for(auto action = history.begin(); action != history.end(); action++){
+        bool chance_action_b =  std::holds_alternative<chance_action>(action);
+        if (!chance_action_b){
+            potsize += std::get<2>(*action);
+
+        }
+    }
+
+    return potsize;
 }
 
 int main(){
