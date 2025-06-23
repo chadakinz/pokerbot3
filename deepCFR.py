@@ -1,4 +1,4 @@
-from pokerbot3.environment.environment import *
+from pokerbot3.environment.python_dependencies.environment import *
 from networks import *
 import numpy as np
 from tqdm import tqdm
