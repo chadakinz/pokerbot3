@@ -12,7 +12,8 @@
 using Deck = std::vector<std::string>;
 using chance_action = std::tuple<char, Deck, int>;
 using player_action = std::tuple<int, char, int>;
-using action_type = std::variant<chance_action, player_action>;
+using player_chips = std::tuple<int, int, int>;
+using action_type = std::variant<chance_action, player_action, player_chips>;
 using History = std::vector<action_type>;
 
 extern std::random_device rd;

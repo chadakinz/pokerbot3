@@ -10,8 +10,8 @@ History intialize_tree(int max_amount){
     int p2_chips = dist(gen);
     Deck cards = chance_sample(4, sharedDeck);
     History game_tree;
-    game_tree.emplace_back(player_action(1, p1_chips, 0));
-    game_tree.emplace_back(player_action(2, p2_chips, 0));
+    game_tree.emplace_back(player_chips(1, p1_chips, 0));
+    game_tree.emplace_back(player_chips(2, p2_chips, 0));
     game_tree.emplace_back(chance_action('c', Deck(cards.begin(), cards.begin() + 2), 0));
     game_tree.emplace_back(chance_action('c', Deck(cards.begin() + 2, cards.begin() + 4), 0));
     game_tree.emplace_back(player_action(2, 'R', 1));
@@ -51,7 +51,7 @@ std::vector<int> process_hand(Deck hand){
 }
 int get_potsize(History history){
     int potsize = 0;
-    for(auto action = history.begin(); action != history.end(); action++){
+    for(auto action = history.begin() + 2; action != history.end(); action++){
         if (!std::holds_alternative<chance_action>(*action)){
             potsize += std::get<2>(std::get<player_action>(*action));
 
@@ -70,11 +70,11 @@ int get_call_amount(History history){
 int get_chips(History history, int i){
     int chips;
     if (i == 1){
-        chips = std::get<1>(std::get<player_action>(*(history.begin())));
+        chips = std::get<1>(std::get<player_chips>(*(history.begin())));
     }else{
-        chips = std::get<1>(std::get<player_action>(*(history.begin() + 1)));
+        chips = std::get<1>(std::get<player_chips>(*(history.begin() + 1)));
     }
-    for(auto action = history.begin(); action != history.end(); action++){
+    for(auto action = history.begin() + 2; action != history.end(); action++){
         if (!(std::holds_alternative<chance_action>(*action))){
             auto player = std::get<0>(*action);
             if (std::get<0>(std::get<player_action>(*action)) == i){
@@ -251,10 +251,10 @@ History process_action(int num, const History& history, int i){
         case 0:
             return {player_action(i, 'F', 0)};
         case 1:
-            if (chips <= call_amount) return {player_action(i, 'A', chips)};
+            if (chips <= call_amount || opp_chips <= 0) return {player_action(i, 'A', chips)};
             else return {player_action(i, 'C', call_amount)};
         case 2:
-            if (chips <= call_amount) return {player_action(i, 'A', chips)};
+            if (chips <= call_amount || opp_chips <= 0) return {player_action(i, 'A', chips)};
             raise_amount = .25 * potsize;
             if (raise_amount < call_amount){
                 return {player_action(i, 'C', call_amount), player_action(i, 'R',  std::min({chips - call_amount, call_amount, opp_chips}))};
@@ -263,7 +263,7 @@ History process_action(int num, const History& history, int i){
             }
 
         case 3:
-            if (chips <= call_amount) return {player_action(i, 'A', chips)};
+            if (chips <= call_amount || opp_chips <= 0) return {player_action(i, 'A', chips)};
             raise_amount = .5 * potsize;
             if (raise_amount < call_amount){
                 return {player_action(i, 'C', call_amount), player_action(i, 'R',  std::min({chips - call_amount, call_amount, opp_chips}))};
@@ -272,7 +272,7 @@ History process_action(int num, const History& history, int i){
             }
 
         case 4:
-            if (chips <= call_amount) return {player_action(i, 'A', chips)};
+            if (chips <= call_amount || opp_chips <= 0) return {player_action(i, 'A', chips)};
             raise_amount = potsize;
             if (raise_amount < call_amount){
                 return {player_action(i, 'C', call_amount), player_action(i, 'R',  std::min({chips - call_amount, call_amount, opp_chips}))};
@@ -280,21 +280,10 @@ History process_action(int num, const History& history, int i){
                 return {player_action(i, 'C', call_amount), player_action(i, 'R',  std::min({chips - call_amount, raise_amount, opp_chips}))};
             }
         case 5:
-            if (chips <= call_amount) return {player_action(i, 'A', chips)};
+            if (chips <= call_amount || opp_chips <= 0) return {player_action(i, 'A', chips)};
             raise_amount = chips - call_amount;
             return {player_action(i, 'C', call_amount), player_action(i, 'R',  std::min({chips - call_amount, raise_amount, opp_chips}))};
     }
 }
 
 
-
-
-
-//TODO finish function
-
-
-
-
-int main(){
-    printf("Hello World");
-}
