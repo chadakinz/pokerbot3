@@ -1,7 +1,7 @@
 import numpy as np
 import phevaluator
 from eval7 import equity, cards, handrange
-from attr import *
+from pokerbot3.python_deepCFR.attr import *
 
 
 ### History data type ({'c': [cards]}, {1: {'R': amount}}, {2: {'C': amount}}}
